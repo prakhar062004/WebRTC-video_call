@@ -8,6 +8,15 @@ let isVideoMuted = false;
 let isScreenSharing = false;
 let screenStream = null;
 
+function updateIcon(elementId, iconName) {
+    const btn = document.getElementById(elementId);
+    if (!btn) return;
+    const icon = btn.querySelector("[data-lucide]");
+    if (icon) {
+        icon.setAttribute("data-lucide", iconName);
+    }
+}
+
 // Initialize lobby preview on page load
 document.addEventListener("DOMContentLoaded", () => {
     initLobby();
@@ -36,10 +45,10 @@ async function initLobby() {
         isVideoMuted = false;
         
         document.getElementById("lobby-mic-btn").classList.remove("muted");
-        document.getElementById("lobby-mic-btn").querySelector("i").setAttribute("data-lucide", "mic");
+        updateIcon("lobby-mic-btn", "mic");
         
         document.getElementById("lobby-cam-btn").classList.remove("muted");
-        document.getElementById("lobby-cam-btn").querySelector("i").setAttribute("data-lucide", "video");
+        updateIcon("lobby-cam-btn", "video");
         
         document.getElementById("lobby-placeholder").classList.add("hidden");
         document.getElementById("lobby-video").classList.remove("hidden");
@@ -50,10 +59,10 @@ async function initLobby() {
         document.getElementById("lobby-video").classList.add("hidden");
         
         document.getElementById("lobby-mic-btn").classList.add("muted");
-        document.getElementById("lobby-mic-btn").querySelector("i").setAttribute("data-lucide", "mic-off");
+        updateIcon("lobby-mic-btn", "mic-off");
         
         document.getElementById("lobby-cam-btn").classList.add("muted");
-        document.getElementById("lobby-cam-btn").querySelector("i").setAttribute("data-lucide", "video-off");
+        updateIcon("lobby-cam-btn", "video-off");
         
         isAudioMuted = true;
         isVideoMuted = true;
@@ -68,7 +77,7 @@ function toggleLobbyMic() {
     }
     const btn = document.getElementById("lobby-mic-btn");
     btn.classList.toggle("muted", isAudioMuted);
-    btn.querySelector("i").setAttribute("data-lucide", isAudioMuted ? "mic-off" : "mic");
+    updateIcon("lobby-mic-btn", isAudioMuted ? "mic-off" : "mic");
     lucide.createIcons();
 }
 
@@ -79,7 +88,7 @@ function toggleLobbyCam() {
     }
     const btn = document.getElementById("lobby-cam-btn");
     btn.classList.toggle("muted", isVideoMuted);
-    btn.querySelector("i").setAttribute("data-lucide", isVideoMuted ? "video-off" : "video");
+    updateIcon("lobby-cam-btn", isVideoMuted ? "video-off" : "video");
     
     document.getElementById("lobby-placeholder").classList.toggle("hidden", !isVideoMuted);
     document.getElementById("lobby-video").classList.toggle("hidden", isVideoMuted);
@@ -118,11 +127,11 @@ async function joinMeeting() {
         // Sync active meeting controls to lobby settings
         const micBtn = document.getElementById("mic-btn");
         micBtn.classList.toggle("muted", isAudioMuted);
-        micBtn.querySelector("i").setAttribute("data-lucide", isAudioMuted ? "mic-off" : "mic");
+        updateIcon("mic-btn", isAudioMuted ? "mic-off" : "mic");
         
         const camBtn = document.getElementById("cam-btn");
         camBtn.classList.toggle("muted", isVideoMuted);
-        camBtn.querySelector("i").setAttribute("data-lucide", isVideoMuted ? "video-off" : "video");
+        updateIcon("cam-btn", isVideoMuted ? "video-off" : "video");
         
         const localAvatar = document.getElementById("avatar-local");
         if (isVideoMuted) {
@@ -368,7 +377,7 @@ function toggleMic() {
     
     const btn = document.getElementById("mic-btn");
     btn.classList.toggle("muted", isAudioMuted);
-    btn.querySelector("i").setAttribute("data-lucide", isAudioMuted ? "mic-off" : "mic");
+    updateIcon("mic-btn", isAudioMuted ? "mic-off" : "mic");
     
     const localBadgeMic = document.getElementById("badge-mic-local");
     if (localBadgeMic) {
@@ -390,7 +399,7 @@ function toggleCam() {
     
     const btn = document.getElementById("cam-btn");
     btn.classList.toggle("muted", isVideoMuted);
-    btn.querySelector("i").setAttribute("data-lucide", isVideoMuted ? "video-off" : "video");
+    updateIcon("cam-btn", isVideoMuted ? "video-off" : "video");
     
     const localVideo = document.getElementById("local-video");
     const localAvatar = document.getElementById("avatar-local");
