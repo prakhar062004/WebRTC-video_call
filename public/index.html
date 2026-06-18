@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AetherCall - Premium Video Calling</title>
+    <link rel="stylesheet" href="design.css">
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Socket.io -->
+    <script src="/socket.io/socket.io.js"></script>
+    <!-- Client Javascript -->
+    <script src="client.js" defer></script>
+</head>
+<body>
+    <!-- App Header -->
+    <header>
+        <h1><i data-lucide="video" style="color: #6366f1;"></i> AetherCall</h1>
+        <div class="room-info hidden" id="header-room-info">
+            <i data-lucide="hash"></i>
+            <span id="display-room-id">lobby</span>
+        </div>
+    </header>
+
+    <!-- Lobby Container -->
+    <div id="lobby-container">
+        <div class="lobby-card">
+            <!-- Left: Video Preview & Local Controls -->
+            <div class="lobby-preview">
+                <div class="preview-video-wrapper">
+                    <video id="lobby-video" autoplay muted playsinline></video>
+                    <div class="video-placeholder id-placeholder hidden" id="lobby-placeholder">
+                        <i data-lucide="video-off"></i>
+                        <span>Camera is disabled</span>
+                    </div>
+                </div>
+                <div class="preview-controls">
+                    <button class="circle-btn" id="lobby-mic-btn" onclick="toggleLobbyMic()">
+                        <i data-lucide="mic"></i>
+                    </button>
+                    <button class="circle-btn" id="lobby-cam-btn" onclick="toggleLobbyCam()">
+                        <i data-lucide="video"></i>
+                    </button>
+                </div>
+            </div>
+            <!-- Right: Configuration Form -->
+            <div class="lobby-form">
+                <h2>Ready to join?</h2>
+                <p>Set up your device and username before entering the room.</p>
+                
+                <div class="form-group">
+                    <label for="username-input">Your Name</label>
+                    <input type="text" id="username-input" placeholder="e.g. prakh, Alex, Sarah" required autofocus>
+                </div>
+                
+                <div class="form-group">
+                    <label for="room-input">Room ID</label>
+                    <input type="text" id="room-input" value="main-room" placeholder="Enter room name">
+                </div>
+
+                <button class="primary-btn" id="join-btn" onclick="joinMeeting()">
+                    Join Meeting <i data-lucide="arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Call Container -->
+    <div id="call-container" class="hidden">
+        <div class="meeting-area">
+            <!-- Dynamic Video Grid -->
+            <div id="video-grid">
+                <!-- Local video tile is dynamically added / managed in client.js -->
+            </div>
+
+            <!-- Floating Controls Bar -->
+            <div class="controls-bar">
+                <button class="control-btn" id="mic-btn" onclick="toggleMic()" title="Mute/Unmute Mic">
+                    <i data-lucide="mic"></i>
+                </button>
+                <button class="control-btn" id="cam-btn" onclick="toggleCam()" title="Enable/Disable Camera">
+                    <i data-lucide="video"></i>
+                </button>
+                <button class="control-btn" id="share-btn" onclick="toggleScreenShare()" title="Share Screen">
+                    <i data-lucide="monitor"></i>
+                </button>
+                
+                <div class="btn-divider"></div>
+                
+                <button class="control-btn" id="chat-toggle-btn" onclick="toggleChatPanel()" title="Toggle Chat">
+                    <i data-lucide="message-square"></i>
+                </button>
+                
+                <div class="btn-divider"></div>
+                
+                <button class="control-btn danger" onclick="leaveMeeting()" title="Leave Meeting">
+                    <i data-lucide="phone-off"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Chat Side Panel -->
+        <div class="side-panel hidden" id="chat-panel">
+            <div class="panel-header">
+                <h3><i data-lucide="message-square" style="color: #6366f1;"></i> Room Chat</h3>
+                <button class="close-panel-btn" onclick="toggleChatPanel()">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="chat-messages" id="chat-messages-container">
+                <!-- Chat bubbles go here -->
+                <div class="system-msg">Welcome to the room chat!</div>
+            </div>
+            <div class="chat-input-bar">
+                <input type="text" id="chat-input" placeholder="Type a message..." onkeydown="handleChatKey(event)">
+                <button class="send-chat-btn" onclick="sendChatMessage()">
+                    <i data-lucide="send"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2026 AetherCall. Built with WebRTC & WebSockets</p>
+    </footer>
+</body>
+</html>
