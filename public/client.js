@@ -147,7 +147,12 @@ async function joinMeeting() {
     }
     
     console.log(`Connecting socket.io server and joining room: ${roomId}`);
-    socket = io();
+    const socketServerUrl = window.location.hostname === 'localhost'
+        ? 'http://localhost:3000'
+        : 'https://webrtc-video-call-1-2fds.onrender.com';
+    socket = io(socketServerUrl, {
+        transports: ['websocket', 'polling']
+    });
     registerSocketEvents();
     
     // Emit join event with client metadata
