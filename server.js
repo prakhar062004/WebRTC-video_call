@@ -37,20 +37,30 @@ function attachSocketHandlers(io) {
   io.on("connection", (socket) => {
     console.log("User connected:", socket.id);
 
-    socket.on("join-room", ({ username }) => {
-      socket.username = username || "Guest " + socket.id.substring(0, 4);
-      console.log(`${socket.username} (${socket.id}) joined the room`);
+socket.on("join-room", ({ username, roomId }) => {
+    const room = roomId || "main-room";
+    socket.join(room);
+    socket.username = username || "Guest " + socket.id.substring(0, 4);
+    console.log(`${socket.username} (${socket.id}) joined room ${room}`);
 
-      const peers = [];
-      io.sockets.sockets.forEach((s) => {
-        if (s.id !== socket.id && s.username) {
-          peers.push({
-            id: s.id,
-            username: s.username,
-          });
-        }
-      });
-      socket.emit("peers", peers);
+    const roomSockets = io.sockets.adapter.rooms.get(room) || new Set();
+    const peers = [];
+    roomSockets.forEach((peerId) => {
+      if (peerId === socket.id) return;
+      const peerSocket = io.sockets.sockets.get(peerId);
+      if (peerSocket?.username) {
+        peers.push({
+          id: peerId,
+          username: peerSocket.username,
+        });
+      }
+    });
+
+    socket.emit("peers", peers);
+    socket.to(room).emit("peer-joined", {
+      id: socket.id,
+      username: socket.username,
+    });
     });
 
     socket.on("signal", ({ to, description, candidate }) => {

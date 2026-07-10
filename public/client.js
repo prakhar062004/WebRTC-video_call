@@ -156,7 +156,7 @@ async function joinMeeting() {
     registerSocketEvents();
     
     // Emit join event with client metadata
-    socket.emit('join-room', { username: localUsername });
+    socket.emit('join-room', { username: localUsername, roomId });
     lucide.createIcons();
 }
 
@@ -171,6 +171,14 @@ function registerSocketEvents() {
             
             socket.emit('signal', { to: peer.id, description: peerConnection.localDescription });
         }
+    });
+
+    socket.on('peer-joined', async ({ id, username }) => {
+        console.log("New peer joined room:", id, username);
+        const peerConnection = makePeerConnection(id, username);
+        const offer = await peerConnection.createOffer();
+        await peerConnection.setLocalDescription(offer);
+        socket.emit('signal', { to: id, description: peerConnection.localDescription });
     });
 
     // Receive RTC description / ICE candidate signals
