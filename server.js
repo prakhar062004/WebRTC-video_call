@@ -8,11 +8,15 @@ import { fileURLToPath } from "url";
 const app = express();
 
 app.use(express.static("public"));
+app.get("/health", (_req, res) => {
+  res.status(200).send("ok");
+});
 
 function createServer({ useHttps = true } = {}) {
   const certPath = "./cert/server.crt";
   const keyPath = "./cert/server.key";
-  const hasCertFiles = useHttps && fs.existsSync(certPath) && fs.existsSync(keyPath);
+  const isProduction = Boolean(process.env.NODE_ENV === "production" || process.env.RENDER || process.env.VERCEL);
+  const hasCertFiles = useHttps && !isProduction && fs.existsSync(certPath) && fs.existsSync(keyPath);
 
   if (hasCertFiles) {
     return {
@@ -105,7 +109,7 @@ socket.on("join-room", ({ username, roomId }) => {
 export function startServer({
   port = Number(process.env.PORT) || 3000,
   host = process.env.HOST || "0.0.0.0",
-  useHttps = process.env.USE_HTTPS !== "false",
+  useHttps = process.env.USE_HTTPS === "true",
 } = {}) {
   const { server, protocol } = createServer({ useHttps });
   const io = new Server(server, {
