@@ -213,11 +213,9 @@ function registerSocketEvents() {
         console.log("Active peers list:", peersList);
         updateConnectionStatus("Waiting for peer", peersList.length ? "peer found" : "waiting");
         for (let peer of peersList) {
-            const peerConnection = makePeerConnection(peer.id, peer.username);
-            const offer = await peerConnection.createOffer();
-            await peerConnection.setLocalDescription(offer);
-            
-            socket.emit('signal', { to: peer.id, description: peerConnection.localDescription });
+            // Just initialize the connection. The existing peer in the room (who receives 'peer-joined')
+            // will act as the caller and create the offer. This avoids offer/answer glare (race conditions).
+            makePeerConnection(peer.id, peer.username);
         }
     });
 
@@ -326,7 +324,16 @@ function makePeerConnection(id, username) {
         if (!video) {
             video = createVideoTile(id, peersUsernames[id] || "Participant", false);
         }
-        video.srcObject = event.streams[0];
+        
+        // Handle cases where the remote peer didn't group tracks into streams, or streams[0] is absent
+        if (event.streams && event.streams[0]) {
+            video.srcObject = event.streams[0];
+        } else {
+            if (!video.srcObject) {
+                video.srcObject = new MediaStream();
+            }
+            video.srcObject.addTrack(event.track);
+        }
     };
 
     peerConnection.onconnectionstatechange = () => {
