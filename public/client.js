@@ -8,6 +8,22 @@ let isVideoMuted = false;
 let isScreenSharing = false;
 let screenStream = null;
 
+function updateConnectionStatus(status, detail = "") {
+    const badge = document.getElementById("connection-status");
+    if (!badge) return;
+
+    badge.textContent = detail ? `${status} — ${detail}` : status;
+    badge.className = "status-pill";
+
+    if (status === "Connected") {
+        badge.classList.add("connected");
+    } else if (status === "Waiting for peer") {
+        badge.classList.add("waiting");
+    } else if (status === "Disconnected") {
+        badge.classList.add("error");
+    }
+}
+
 function updateIcon(elementId, iconName) {
     const btn = document.getElementById(elementId);
     if (!btn) return;
@@ -19,6 +35,7 @@ function updateIcon(elementId, iconName) {
 
 // Initialize lobby preview on page load
 document.addEventListener("DOMContentLoaded", () => {
+    updateConnectionStatus("Connecting…");
     initLobby();
     lucide.createIcons();
 });
@@ -147,9 +164,24 @@ async function joinMeeting() {
     }
     
     console.log(`Connecting socket.io server and joining room: ${roomId}`);
-    const socketServerUrl = window.location.hostname === 'localhost'
-        ? 'http://localhost:3000'
+    updateConnectionStatus("Connecting…", "signaling");
+    
+    // Determine the Socket.IO server URL dynamically:
+    // 1. If running locally (localhost, 127.0.0.1, or local IP like 192.168.x.x), connect to the current origin.
+    // 2. Otherwise (e.g. deployed to Vercel/GitHub Pages), fall back to the deployed Render server.
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const isLocalIP = window.location.hostname.startsWith('192.168.') || 
+                      window.location.hostname.startsWith('10.') || 
+                      window.location.hostname.startsWith('172.') ||
+                      window.location.hostname.startsWith('127.');
+    const isStaticHost = window.location.hostname.endsWith('.vercel.app') || 
+                         window.location.hostname.endsWith('.github.io');
+
+    const socketServerUrl = (isLocalhost || isLocalIP || !isStaticHost)
+        ? window.location.origin
         : 'https://webrtc-video-call-1-2fds.onrender.com';
+
+    console.log(`Using Socket.IO server: ${socketServerUrl}`);
     socket = io(socketServerUrl, {
         transports: ['websocket', 'polling']
     });
@@ -161,9 +193,25 @@ async function joinMeeting() {
 }
 
 function registerSocketEvents() {
+    socket.on('connect', () => {
+        console.log('Socket connected:', socket.id);
+        updateConnectionStatus("Connected", "signaling ready");
+    });
+
+    socket.on('connect_error', (error) => {
+        console.error('Socket connection error:', error);
+        updateConnectionStatus("Disconnected", "connection error");
+    });
+
+    socket.on('disconnect', () => {
+        console.log('Socket disconnected');
+        updateConnectionStatus("Disconnected", "socket closed");
+    });
+
     // Receive list of existing participants in room
     socket.on('peers', async (peersList) => {
         console.log("Active peers list:", peersList);
+        updateConnectionStatus("Waiting for peer", peersList.length ? "peer found" : "waiting");
         for (let peer of peersList) {
             const peerConnection = makePeerConnection(peer.id, peer.username);
             const offer = await peerConnection.createOffer();
@@ -175,6 +223,7 @@ function registerSocketEvents() {
 
     socket.on('peer-joined', async ({ id, username }) => {
         console.log("New peer joined room:", id, username);
+        updateConnectionStatus("Waiting for peer", `${username || 'peer'} joined`);
         const peerConnection = makePeerConnection(id, username);
         const offer = await peerConnection.createOffer();
         await peerConnection.setLocalDescription(offer);
@@ -187,6 +236,7 @@ function registerSocketEvents() {
 
         if (description) {
             if (description.type === 'offer') {
+                updateConnectionStatus("Connecting", "offer received");
                 await peerConnection.setRemoteDescription(new RTCSessionDescription(description));
                 await processIceQueue(from);
                 
@@ -194,6 +244,7 @@ function registerSocketEvents() {
                 await peerConnection.setLocalDescription(answer);
                 socket.emit('signal', { to: from, description: peerConnection.localDescription });
             } else if (description.type === 'answer') {
+                updateConnectionStatus("Connecting", "answer received");
                 await peerConnection.setRemoteDescription(new RTCSessionDescription(description));
                 await processIceQueue(from);
             }
@@ -280,8 +331,11 @@ function makePeerConnection(id, username) {
 
     peerConnection.onconnectionstatechange = () => {
         console.log(`RTC state with peer ${id}: ${peerConnection.connectionState}`);
-        if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
+        if (peerConnection.connectionState === 'connected') {
+            updateConnectionStatus("Connected", "peer linked");
+        } else if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
             removePeer(id);
+            updateConnectionStatus("Waiting for peer", "reconnecting");
         }
     };
 
